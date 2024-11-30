@@ -21,10 +21,10 @@ type Issuer struct {
 	didDocument *core.DIDDocument
 }
 
-func (server *Server) IssueSimpleVC(_ context.Context, msg *protos.MsgIssueVC) (*protos.MsgIssueVCResponse, error) {
+func (server *Server) IssueSimpleVC(_ context.Context, msg *protos.MsgRequestVC) (*protos.MsgResponseVC, error) {
 	log.Printf("IssueSimpleVC MSG: %+v \n", msg)
 
-	response := new(protos.MsgIssueVCResponse)
+	response := new(protos.MsgResponseVC)
 
 	vcToken, err := server.Issuer.GenerateSampleVC()
 	if err != nil {

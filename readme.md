@@ -45,3 +45,5 @@ message Did {
 ```
 
 https://eips.ethereum.org/EIPS/eip-1056
+
+ref; https://github.com/SSI-Korea/book-examples
