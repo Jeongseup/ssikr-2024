@@ -7,6 +7,7 @@ import (
 	"os"
 	"ssikr/core"
 	"ssikr/protos"
+	"ssikr/util"
 	"time"
 
 	"google.golang.org/grpc"
@@ -43,23 +44,34 @@ func (holder *Holder) GenerateDID() {
 	holder.DidDocument = didDocument
 }
 
+type ID struct {
+	Name      string
+	Mobile    string
+	BirthDate string
+	Gender    string
+}
+
 // ID VC란 주민등록 같은 VC를 의미한다.
 // 가장 먼저 발급 받아야하는 것.
-func (holder *Holder) GenerateIdentificationVC() {
+func (holder *Holder) GenerateIdentificationVC(id ID) {
+	// 원래는 모든 argu에 대해서 validation 필요하겠지만 생략
+
 	// VC 생성.
 	vc, _ := core.NewVC(
-		"1234567890",
+		"1234567890", // 주민등록 ID 자동으로 생성됨
 		[]string{"VerifiableCredential", "SelfCertification"},
 		holder.Did.String(), // Issuer did
 		map[string]interface{}{
 			"id":        "1234567890",
-			"name":      "SON JEONGSEUP",
-			"mobile":    "010-1234-1234",
-			"birthDate": "2000-01-01",
-			"gender":    "M",
+			"name":      id.Name,
+			"mobile":    id.Mobile,
+			"birthDate": id.BirthDate,
+			"gender":    id.Gender,
 		},
 	)
 
+	fmt.Println("Generated ID VC: ")
+	util.PrintPrettier(vc)
 	vcJwt, _ := vc.GenerateJWT(holder.DidDocument.VerificationMethod[0].Id, holder.Kms.PrivateKey)
 	holder.VCList = append(holder.VCList, vcJwt)
 }
@@ -83,8 +95,26 @@ func (holder *Holder) GenerateFirstVC() {
 	holder.VCList = append(holder.VCList, vcJwt)
 }
 
-func (holder *Holder) GenerateVP() (string, error) {
+func (holder *Holder) GenerateVPForID() (string, error) {
+	VCForID := holder.VCList[0]
 
+	vp, err := core.NewVP(
+		"12345678901111",
+		[]string{"VerifiablePresentaion"},
+		holder.Did.String(),
+		[]string{VCForID},
+	)
+	if err != nil {
+		fmt.Println("ERROR")
+		os.Exit(0)
+	}
+
+	vpToken := vp.GenerateJWT(holder.DidDocument.VerificationMethod[0].Id, holder.Kms.PrivateKey)
+
+	return vpToken, nil
+}
+
+func (holder *Holder) GenerateVP() (string, error) {
 	vcList := holder.VCList
 
 	vp, err := core.NewVP(
@@ -104,7 +134,36 @@ func (holder *Holder) GenerateVP() (string, error) {
 }
 
 // 실제로 방문하거나 전화를 통해서만 발급가능한 VC
-func (holder *Holder) RequestVCToRootOfTrustIssuer(vpToken string) error {
+func (holder *Holder) RequestVCToRootOfTrustIssuer(name, mobile, birthDate, gender string) error {
+	conn, err := grpc.Dial("localhost:1120", grpc.WithInsecure(), grpc.WithBlock())
+	if err != nil {
+		log.Printf("RootOfTrustIssuer not connect: %v", err)
+		return err
+	}
+	defer conn.Close()
+
+	c := protos.NewSimpleIssuerClient(conn)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+
+	res, err := c.IssueIDVC(ctx, &protos.MsgRequestIDVC{
+		Did:       holder.Did.String(),
+		Name:      name,
+		Mobile:    mobile,
+		BirthDate: birthDate,
+		Gender:    gender,
+	})
+	if err != nil {
+		log.Printf("could not request: %v", err)
+		return err
+	}
+
+	fmt.Printf("RootOfTrustIssuer's response: %s\n", res.Result)
+	fmt.Printf("RootOfTrustIssuer's response VC: %s\n", res.Vc)
+	if res.Result == "OK" {
+		holder.VCList = append(holder.VCList, res.Vc)
+	}
+
 	return nil
 }
 
@@ -244,5 +303,30 @@ func (holder *Holder) PrintAtomicVC() {
 	for key, _ := range holder.AtomicVCList {
 		fmt.Println(idx, ". ", key)
 		idx++
+	}
+}
+
+func (holder *Holder) PrintVCTokens() {
+	if holder.VCList == nil {
+		return
+	}
+	// fmt.Println("<< VC List >>")
+	for idx, vc := range holder.VCList {
+		fmt.Printf("[%d]VC: %+v\n", idx, vc)
+	}
+}
+
+func (holder *Holder) PrintVCDetails() {
+	if holder.VCList == nil {
+		return
+	}
+	// fmt.Println("<< VC Detail List >>")
+	for idx, vcToken := range holder.VCList {
+		isVerify, claims, err := core.ParseAndVerifyJwtForVC(vcToken)
+		if (!isVerify) || (err != nil) {
+			fmt.Println("VC is Not verified. or got err..", err)
+		}
+		fmt.Printf("[%d]VC: \n", idx)
+		util.PrintPrettier(claims)
 	}
 }

@@ -53,7 +53,7 @@ func ResolveDid(did string) (string, error) {
 		log.Fatalf("Failed to resolve DID.")
 	}
 
-	log.Printf("Resolver Response: %s\n", res)
+	// log.Printf("Resolver Response: %s\n", res)
 
 	return res.DidDocument, nil
 }

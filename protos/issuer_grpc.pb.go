@@ -22,6 +22,7 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	SimpleIssuer_IssueSimpleVC_FullMethodName = "/issuer.SimpleIssuer/IssueSimpleVC"
+	SimpleIssuer_IssueIDVC_FullMethodName     = "/issuer.SimpleIssuer/IssueIDVC"
 )
 
 // SimpleIssuerClient is the client API for SimpleIssuer service.
@@ -29,6 +30,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type SimpleIssuerClient interface {
 	IssueSimpleVC(ctx context.Context, in *MsgRequestVC, opts ...grpc.CallOption) (*MsgResponseVC, error)
+	IssueIDVC(ctx context.Context, in *MsgRequestIDVC, opts ...grpc.CallOption) (*MsgResponseVC, error)
 }
 
 type simpleIssuerClient struct {
@@ -49,11 +51,22 @@ func (c *simpleIssuerClient) IssueSimpleVC(ctx context.Context, in *MsgRequestVC
 	return out, nil
 }
 
+func (c *simpleIssuerClient) IssueIDVC(ctx context.Context, in *MsgRequestIDVC, opts ...grpc.CallOption) (*MsgResponseVC, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(MsgResponseVC)
+	err := c.cc.Invoke(ctx, SimpleIssuer_IssueIDVC_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SimpleIssuerServer is the server API for SimpleIssuer service.
 // All implementations must embed UnimplementedSimpleIssuerServer
 // for forward compatibility.
 type SimpleIssuerServer interface {
 	IssueSimpleVC(context.Context, *MsgRequestVC) (*MsgResponseVC, error)
+	IssueIDVC(context.Context, *MsgRequestIDVC) (*MsgResponseVC, error)
 	mustEmbedUnimplementedSimpleIssuerServer()
 }
 
@@ -66,6 +79,9 @@ type UnimplementedSimpleIssuerServer struct{}
 
 func (UnimplementedSimpleIssuerServer) IssueSimpleVC(context.Context, *MsgRequestVC) (*MsgResponseVC, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method IssueSimpleVC not implemented")
+}
+func (UnimplementedSimpleIssuerServer) IssueIDVC(context.Context, *MsgRequestIDVC) (*MsgResponseVC, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method IssueIDVC not implemented")
 }
 func (UnimplementedSimpleIssuerServer) mustEmbedUnimplementedSimpleIssuerServer() {}
 func (UnimplementedSimpleIssuerServer) testEmbeddedByValue()                      {}
@@ -106,6 +122,24 @@ func _SimpleIssuer_IssueSimpleVC_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SimpleIssuer_IssueIDVC_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MsgRequestIDVC)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SimpleIssuerServer).IssueIDVC(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SimpleIssuer_IssueIDVC_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SimpleIssuerServer).IssueIDVC(ctx, req.(*MsgRequestIDVC))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // SimpleIssuer_ServiceDesc is the grpc.ServiceDesc for SimpleIssuer service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -116,6 +150,10 @@ var SimpleIssuer_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "IssueSimpleVC",
 			Handler:    _SimpleIssuer_IssueSimpleVC_Handler,
+		},
+		{
+			MethodName: "IssueIDVC",
+			Handler:    _SimpleIssuer_IssueIDVC_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

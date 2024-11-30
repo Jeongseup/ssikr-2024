@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"ssikr/core"
 	"ssikr/protos"
@@ -52,19 +51,10 @@ func (issuer *Issuer) GenerateDID() {
 }
 
 func (server *Server) IssueSimpleVC(_ context.Context, msg *protos.MsgRequestVC) (*protos.MsgResponseVC, error) {
-	log.Printf("IssueSimpleVC MSG: %+v \n", msg)
-	defer func() {
-		log.Printf("Error!!!")
-		v := recover()
-		fmt.Println("recovered:", v)
-	}()
-
 	if msg.Vp == "" || msg.Vp == "NONE" {
 		response := new(protos.MsgResponseVC)
-
 		response.Result = "FAIL"
 		response.Vc = "VP is invalid"
-
 		return response, nil
 	}
 
@@ -74,57 +64,48 @@ func (server *Server) IssueSimpleVC(_ context.Context, msg *protos.MsgRequestVC)
 		return nil, errors.New(fmt.Sprintf("VP is invalid: %s", err))
 	}
 
-	fmt.Println("VP is verified.")
-
 	for i, vc := range claims.Vp.VerifiableCredential {
-		fmt.Println("VC: ", vc)
 		isVerify, claims, err := core.ParseAndVerifyJwtForVC(vc)
 		if !isVerify || err != nil {
 			fmt.Println("VC #", i, " is NOT verified.")
 			return nil, errors.New(fmt.Sprintf("VC is invalid: %s", err))
 		}
-		fmt.Println("VC is verified.")
+		fmt.Println("### VC is verified and keep issuing Universtiy VC... ###")
 		vcClaims := claims.Vc.CredentialSubject
-		if vcClaims["name"] == "HONG KIL DONG" && vcClaims["birthDate"] == "2000-01-01" {
+		// fmt.Printf("VC claims:: %+v", vcClaims)
 
-			fmt.Println("VC 발급!!!!")
-
-			response := new(protos.MsgResponseVC)
-
-			if server.Issuer.CredentialSubjectJsonFilePath == "" {
-				server.Issuer.CredentialSubjectJsonFilePath = "data/university_vc.json"
-			}
-
-			vcToken, err := server.Issuer.GenerateSampleVC()
-			if err != nil {
-
-			}
-			response.Result = "OK"
-			response.Vc = vcToken
-
-			return response, nil
+		// Extract the value associated with the "name" key
+		name, exists := vcClaims["name"]
+		if !exists {
+			fmt.Println("Key 'name' not found in the map")
+			return nil, errors.New(fmt.Sprintf("VP is invalid: %s", err))
 		}
+
+		vcToken, err := server.Issuer.GenerateSampleVC(name.(string))
+		if err != nil {
+			fmt.Println("Failed to generate University VC")
+			return nil, errors.New(fmt.Sprintf("VP is invalid: %s", err))
+		}
+
+		response := new(protos.MsgResponseVC)
+		response.Result = "OK"
+		response.Vc = vcToken
+		return response, nil
 	}
 
 	return nil, errors.New("Error")
 }
 
-func (issuer *Issuer) GenerateSampleVC() (string, error) {
-
+func (issuer *Issuer) GenerateSampleVC(name string) (string, error) {
 	var credentialSubject map[string]interface{}
-
-	if issuer.CredentialSubjectJsonFilePath == "" {
-		vcData := make(map[string]interface{})
-		vcData["name"] = "HONG KIL DONG"
-		credentialSubject = vcData
-	} else {
-		credentialSubject = loadJson(issuer.CredentialSubjectJsonFilePath) // "custom_vc.json"
-	}
+	vcData := make(map[string]interface{})
+	vcData["name"] = name
+	credentialSubject = vcData
 
 	// VC 생성.
 	vc, err := core.NewVC(
 		"1234567890",
-		[]string{"VerifiableCredential", "DiplomaOfUniversity"},
+		[]string{"VerifiableCredential", "IncheonNationalUniversity"},
 		issuer.did.String(),
 		credentialSubject,
 	)

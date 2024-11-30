@@ -6,7 +6,9 @@ import (
 	"bufio"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/btcsuite/btcd/btcutil/base58"
@@ -30,6 +32,18 @@ func PressKey(msg string) {
 
 	fmt.Println(msg)
 	kbReader.ReadString('\n')
+}
+
+func PrintPrettier(data any) {
+	// Convert to pretty JSON
+	prettyJSON, err := json.MarshalIndent(data, "", "  ")
+	if err != nil {
+		fmt.Println("Failed to generate JSON:", err)
+		return
+	}
+
+	// Print the pretty JSON
+	log.Println(string(prettyJSON))
 }
 
 // func MakeHash(plain string) []byte {

@@ -7,6 +7,7 @@ package issuer;
 
 service SimpleIssuer {
   rpc IssueSimpleVC (MsgRequestVC) returns (MsgResponseVC) {}
+  rpc IssueIDVC (MsgRequestIDVC) returns (MsgResponseVC) {}
 }
 
 message MsgRequestVC {
@@ -19,3 +20,12 @@ message MsgResponseVC {
   string msg = 2;
   string vc = 3;
 }
+
+message MsgRequestIDVC {
+  string did = 1;
+  string name = 2;
+  string mobile = 3;
+  string birthDate = 4;
+  string gender = 5;
+}
+
