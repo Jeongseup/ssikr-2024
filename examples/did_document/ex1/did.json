@@ -1,0 +1,12 @@
+{
+  "@context": ["https://www.w3.org/ns/did/v1"],
+  "id": "did:ssikr:ByQT7znZQM8iNrkEFWpvYexJJ9fiHXW9tVwJepy9zxBG",
+  "verificationMethod": [
+    {
+      "id": "did:ssikr:ByQT7znZQM8iNrkEFWpvYexJJ9fiHXW9tVwJepy9zxBG#keys-1",
+      "type": "EcdsaSecp256k1VerificationKey2019",
+      "controller": "did:ssikr:ByQT7znZQM8iNrkEFWpvYexJJ9fiHXW9tVwJepy9zxBG",
+      "PublicKeyMultibase": "zaSq9DsNNvGhYxYyqA9wd2eduEAZ5AXWgJTbTFLULXFNge6uuxD8wFtf696S9iEBomEEhabQ9sUj2qumiGK53H97woHbW4yufSwQz79S2cErUREgXgBH5tyiiafN4"
+    }
+  ]
+}
